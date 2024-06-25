@@ -1,0 +1,33 @@
+* {
+    margin: 0;
+}
+
+body {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+header {
+    display: flex;
+    height: 10vh;
+    width: 100vw;
+    background-color: white;
+    justify-content: center;
+    align-items: center;
+}
+
+main {
+    display: flex;
+    height: 80vh;
+    width: 100vw;
+    background-color: black;
+}
+
+footer {
+    display: flex;
+    height: 10vh;
+    width: 100vw;
+}
