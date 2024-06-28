@@ -1,4 +1,7 @@
 const TicTacToe = (function() {
+    let player1 = null;
+    let player2 = null;
+    let currentPlayer = null;
 
     const createBoard = () => {
         let board = [];
@@ -12,44 +15,67 @@ const TicTacToe = (function() {
         return board;
     };
 
-    const createPlayers = (name, symbol) => { 
-        return {
-            name,
-            symbol
+    const printBoard = (board) => {
+        const gameboard = document.getElementById('gameboard');
+        gameboard.innerHTML = ''; // Clear previous content
+
+        board.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+                const cellDiv = document.createElement('div');
+                cellDiv.classList.add('cell');
+                cellDiv.dataset.row = rowIndex;
+                cellDiv.dataset.col = colIndex;
+                cellDiv.textContent = cell;
+                cellDiv.addEventListener('click', () => game.makeMove(rowIndex, colIndex)); // Access makeMove through game object
+                gameboard.appendChild(cellDiv);
+            });
+        });
+    };
+
+    const createPlayer = (name, symbol) => {
+        return { name, symbol };
+    };
+
+    const createPlayersFromInput = () => {
+        const player1Name = document.getElementById('player1').value.trim() || 'Player 1';
+        const player2Name = document.getElementById('player2').value.trim() || 'Player 2';
+
+        if (player1Name === player2Name) {
+            alert('Player names must be different!');
+            return false;
         }
+
+        player1 = createPlayer(player1Name, 'X');
+        player2 = createPlayer(player2Name, 'O');
+        currentPlayer = player1; // Start with player 1
+        return true;
     };
 
     const game = (function() {
         let board = createBoard();
-        let currentPlayerIndex = 0;
-        const players = [
-            createPlayers('Player1', 'X'),
-            createPlayers('Player2', 'O')
-        ];
-
-        const printBoard = () => {
-            console.log(board.map(row => row.join(' | ')).join('\n---------\n'));
-        };
 
         const makeMove = (row, col) => {
             if (board[row][col] === '') {
-                board[row][col] = players[currentPlayerIndex].symbol;
-                printBoard();
+                board[row][col] = currentPlayer.symbol;
+                printBoard(board);
 
                 if (checkWin()) {
-                    console.log(`${players[currentPlayerIndex].name} wins!`);
+                    setTimeout(() => { // Delay win message for visual effect
+                        alert(`${currentPlayer.name} wins!`);
+                        showResults(`${currentPlayer.name} wins!`);
+                    }, 100);
                     resetGame();
                 } else if (board.flat().every(cell => cell !== '')) {
-                    console.log('It\'s a draw!');
+                    alert('It\'s a draw!');
+                    showResults('It\'s a draw!');
                     resetGame();
                 } else {
-                    currentPlayerIndex = (currentPlayerIndex + 1) % 2;
+                    currentPlayer = (currentPlayer === player1) ? player2 : player1; // Switch players
                 }
+            } else {
+                alert('Cell already taken! Choose another.');
             }
-            else {
-                console.log('Cells already taken!');
-            }
-        }
+        };
 
         const checkWin = () => {
             const winPatterns = [
@@ -69,29 +95,43 @@ const TicTacToe = (function() {
             return winPatterns.some(pattern => {
                 const [a, b, c] = pattern;
                 return board[a[0]][a[1]] !== '' &&
-                       board[a[0]][a[1]] === board[b[0]][b[1]] &&
-                       board[a[0]][a[1]] === board[c[0]][c[1]];
+                    board[a[0]][a[1]] === board[b[0]][b[1]] &&
+                    board[a[0]][a[1]] === board[c[0]][c[1]];
             });
         };
 
         const resetGame = () => {
             board = createBoard();
-            currentPlayerIndex = 0;
+            currentPlayer = player1; // Reset to player 1
             printBoard(board);
         };
-        
+
+        // Return the makeMove function and other necessary functions
         return {
-            makeMove
+            makeMove,
+            resetGame
         };
     })();
 
+    // Function to show game results
+    const showResults = (result) => {
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.textContent = result;
+    };
+
+    // Event listener for the start/restart game button
+    const startButton = document.getElementById('start-game');
+    startButton.addEventListener('click', () => {
+        if (createPlayersFromInput()) {
+            game.resetGame();
+        }
+    });
+
+    // Initialize the game board initially
+    printBoard(createBoard());
+
+    // Expose makeMove function globally if needed
     return {
         makeMove: game.makeMove
     };
 })();
-
-TicTacToe.makeMove(0, 0);
-TicTacToe.makeMove(0, 1);
-TicTacToe.makeMove(1, 0);
-TicTacToe.makeMove(1, 1);
-TicTacToe.makeMove(2, 0);
