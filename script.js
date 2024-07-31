@@ -1,137 +1,172 @@
-const TicTacToe = (function() {
-    let player1 = null;
-    let player2 = null;
-    let currentPlayer = null;
+const createBoard = () => {
+    let board = [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', '']
+    ];
 
-    const createBoard = () => {
-        let board = [];
-
-        for (let i = 0; i < 3; i++) {
-            board[i] = [];
-            for (let j = 0; j < 3; j++) {
-                board[i][j] = '';
-            }
+    const setMove = (row, col, player) => {
+        if (board[row][col] === '') {
+            board[row][col] = player;
+            return true;
         }
-        return board;
+        return false;
     };
 
-    const printBoard = (board) => {
-        const gameboard = document.getElementById('gameboard');
-        gameboard.innerHTML = ''; // Clear previous content
+    const getBoard = () => board;
 
-        board.forEach((row, rowIndex) => {
+    return { setMove, getBoard };
+};
+
+const createGame = (player1Name, player2Name) => {
+    const board = createBoard();
+    const player1 = { name: player1Name, token: 'X' };
+    const player2 = { name: player2Name, token: 'O' };
+    let currentPlayer = player1;
+    let gameEnded = false;
+
+    const switchPlayer = () => {
+        currentPlayer = currentPlayer === player1 ? player2 : player1;
+    };
+
+    const checkWin = () => {
+        const b = board.getBoard();
+
+        // Check rows
+        for (let row of b) {
+            if (row[0] === row[1] && row[1] === row[2] && row[0] !== '') {
+                return row[0];
+            }
+        }
+
+        // Check columns
+        for (let col = 0; col < 3; col++) {
+            if (b[0][col] === b[1][col] && b[1][col] === b[2][col] && b[0][col] !== '') {
+                return b[0][col];
+            }
+        }
+
+        // Check diagonals
+        if (b[0][0] === b[1][1] && b[1][1] === b[2][2] && b[0][0] !== '') {
+            return b[0][0];
+        }
+
+        if (b[0][2] === b[1][1] && b[1][1] === b[2][0] && b[0][2] !== '') {
+            return b[0][2];
+        }
+
+        return null;
+    };
+
+    const checkDraw = () => {
+        const b = board.getBoard();
+        return b.flat().every(cell => cell !== '');
+    };
+
+    const play = (row, col) => {
+        if (gameEnded) {
+            return;
+        }
+
+        if (board.setMove(row, col, currentPlayer.token)) {
+            updateBoardUI();
+            const winner = checkWin();
+            if (winner) {
+                setMessage(`Congratulations ${currentPlayer.name}! You win!`);
+                showModal(`Congratulations ${currentPlayer.name}! You win!`);
+                gameEnded = true;
+                return;
+            }
+            if (checkDraw()) {
+                setMessage("It's a draw!");
+                showModal("It's a draw!");
+                gameEnded = true;
+                return;
+            }
+            switchPlayer();
+            setMessage(`Current Player: ${currentPlayer.name} (${currentPlayer.token})`);
+        } else {
+            setMessage('Invalid move, try again.');
+        }
+    };
+
+    const updateBoardUI = () => {
+        const b = board.getBoard();
+        b.forEach((row, rowIndex) => {
             row.forEach((cell, colIndex) => {
-                const cellDiv = document.createElement('div');
-                cellDiv.classList.add('cell');
-                cellDiv.dataset.row = rowIndex;
-                cellDiv.dataset.col = colIndex;
-                cellDiv.textContent = cell;
-                cellDiv.addEventListener('click', () => game.makeMove(rowIndex, colIndex)); // Access makeMove through game object
-                gameboard.appendChild(cellDiv);
+                const cellElement = document.getElementById(`cell-${rowIndex}-${colIndex}`);
+                cellElement.textContent = cell;
             });
         });
     };
 
-    const createPlayer = (name, symbol) => {
-        return { name, symbol };
+    const setMessage = (message) => {
+        const messageElement = document.getElementById('message');
+        messageElement.textContent = message;
     };
 
-    const createPlayersFromInput = () => {
-        const player1Name = document.getElementById('player1').value.trim() || 'Player 1';
-        const player2Name = document.getElementById('player2').value.trim() || 'Player 2';
+    const showModal = (message) => {
+        const modal = document.getElementById('modal');
+        const modalMessage = document.getElementById('modal-message');
+        modalMessage.textContent = message;
+        modal.style.display = 'block';
+    };
 
-        if (player1Name === player2Name) {
-            alert('Player names must be different!');
-            return false;
+    return { play, getCurrentPlayer: () => currentPlayer, board };
+};
+
+const startGame = () => {
+    const player1Name = document.getElementById('player1').value;
+    const player2Name = document.getElementById('player2').value;
+
+    if (!player1Name || !player2Name) {
+        alert('Please enter names for both players.');
+        return;
+    }
+
+    game = createGame(player1Name, player2Name);
+
+    document.getElementById('player-names-form').style.display = 'none';
+    document.getElementById('player-info').style.display = 'block';
+    document.getElementById('board').style.display = 'grid';
+    document.getElementById('player1-info').textContent = `${player1Name} (X)`;
+    document.getElementById('player2-info').textContent = `${player2Name} (O)`;
+
+    // Reset the board display
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach(cell => cell.textContent = '');
+
+    setMessage(`Current Player: ${game.getCurrentPlayer().name} (${game.getCurrentPlayer().token})`);
+};
+
+const startNewGame = () => {
+    const modal = document.getElementById('modal');
+    modal.style.display = 'none';
+
+    document.getElementById('player-names-form').style.display = 'block';
+    document.getElementById('player-info').style.display = 'none';
+    document.getElementById('board').style.display = 'none';
+    document.getElementById('message').textContent = '';
+
+    // Clear input fields
+    document.getElementById('player1').value = '';
+    document.getElementById('player2').value = '';
+};
+
+const initGame = () => {
+    const boardElement = document.getElementById('board');
+    for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+            const cellElement = document.createElement('div');
+            cellElement.id = `cell-${row}-${col}`;
+            cellElement.classList.add('cell');
+            cellElement.addEventListener('click', () => game.play(row, col));
+            boardElement.appendChild(cellElement);
         }
+    }
+};
 
-        player1 = createPlayer(player1Name, 'X');
-        player2 = createPlayer(player2Name, 'O');
-        currentPlayer = player1; // Start with player 1
-        return true;
-    };
-
-    const game = (function() {
-        let board = createBoard();
-
-        const makeMove = (row, col) => {
-            if (board[row][col] === '') {
-                board[row][col] = currentPlayer.symbol;
-                printBoard(board);
-
-                if (checkWin()) {
-                    setTimeout(() => { // Delay win message for visual effect
-                        alert(`${currentPlayer.name} wins!`);
-                        showResults(`${currentPlayer.name} wins!`);
-                    }, 100);
-                    resetGame();
-                } else if (board.flat().every(cell => cell !== '')) {
-                    alert('It\'s a draw!');
-                    showResults('It\'s a draw!');
-                    resetGame();
-                } else {
-                    currentPlayer = (currentPlayer === player1) ? player2 : player1; // Switch players
-                }
-            } else {
-                alert('Cell already taken! Choose another.');
-            }
-        };
-
-        const checkWin = () => {
-            const winPatterns = [
-                // Rows
-                [[0, 0], [0, 1], [0, 2]],
-                [[1, 0], [1, 1], [1, 2]],
-                [[2, 0], [2, 1], [2, 2]],
-                // Columns
-                [[0, 0], [1, 0], [2, 0]],
-                [[0, 1], [1, 1], [2, 1]],
-                [[0, 2], [1, 2], [2, 2]],
-                // Diagonals
-                [[0, 0], [1, 1], [2, 2]],
-                [[0, 2], [1, 1], [2, 0]]
-            ];
-
-            return winPatterns.some(pattern => {
-                const [a, b, c] = pattern;
-                return board[a[0]][a[1]] !== '' &&
-                    board[a[0]][a[1]] === board[b[0]][b[1]] &&
-                    board[a[0]][a[1]] === board[c[0]][c[1]];
-            });
-        };
-
-        const resetGame = () => {
-            board = createBoard();
-            currentPlayer = player1; // Reset to player 1
-            printBoard(board);
-        };
-
-        // Return the makeMove function and other necessary functions
-        return {
-            makeMove,
-            resetGame
-        };
-    })();
-
-    // Function to show game results
-    const showResults = (result) => {
-        const resultsDiv = document.getElementById('results');
-        resultsDiv.textContent = result;
-    };
-
-    // Event listener for the start/restart game button
-    const startButton = document.getElementById('start-game');
-    startButton.addEventListener('click', () => {
-        if (createPlayersFromInput()) {
-            game.resetGame();
-        }
-    });
-
-    // Initialize the game board initially
-    printBoard(createBoard());
-
-    // Expose makeMove function globally if needed
-    return {
-        makeMove: game.makeMove
-    };
-})();
+window.onload = () => {
+    initGame();
+    document.getElementById('player-names-form').style.display = 'block';
+};
